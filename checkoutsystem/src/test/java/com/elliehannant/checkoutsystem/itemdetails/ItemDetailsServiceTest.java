@@ -120,6 +120,24 @@ public class ItemDetailsServiceTest {
     }
 
     @Test
+    public void formatPrice_penceReturned() {
+        String response = ItemDetailsService.formatPrice(99);
+        Assert.assertEquals("Format price", "99p", response);
+    }
+
+    @Test
+    public void formatPrice_poundsReturned() {
+        String response = ItemDetailsService.formatPrice(100);
+        Assert.assertEquals("Format Price", "£1.00", response);
+
+        String response2 = ItemDetailsService.formatPrice(1000000);
+        Assert.assertEquals("Format Price", "£10000.00", response2);
+
+        String response3 = ItemDetailsService.formatPrice(43943);
+        Assert.assertEquals("Format Price", "£439.43", response3);
+    }
+
+    @Test
     public void getAllSampleItemDetails_allSampleItemsReturned() {
         List<ItemDetails> actualResponse = ItemDetailsService.getAllSampleItemDetails();
 
