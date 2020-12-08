@@ -9,9 +9,11 @@ import java.util.List;
 public class CheckoutSystemService {
 
     public static void runCheckoutSystemService() {
-        List<ItemDetails> itemDetailsList = getItems();
-        displayItemDetails(itemDetailsList);
-        runCheckout(itemDetailsList);
+        do {
+            List<ItemDetails> itemDetailsList = getItems();
+            displayItemDetails(itemDetailsList);
+            runCheckout(itemDetailsList);
+        } while (reRunSystem());
     }
 
     private static List<ItemDetails> getItems() {
@@ -38,5 +40,9 @@ public class CheckoutSystemService {
         System.out.println(" CHECKOUT");
         System.out.println("----------------------------------------------------------");
         System.out.println(CheckoutTransactionService.checkout(itemDetailsList));
+    }
+
+    private static boolean reRunSystem() {
+        return UserInputService.getYesOrNoResponseAsBoolean("Would you like to re run the checkout system?");
     }
 }
