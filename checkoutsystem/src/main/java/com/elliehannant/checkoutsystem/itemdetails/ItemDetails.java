@@ -22,7 +22,7 @@ public class ItemDetails {
 
         if (discountNum != null && discountPrice != null) {
             int numberOfFullPriceItems = discountNum - 1;
-            this.discountedItemPrice = discountPrice - (numberOfFullPriceItems*pricePerUnit);
+            this.discountedItemPrice = discountPrice - (numberOfFullPriceItems * pricePerUnit);
             this.itemDiscounted = true;
         } else {
             this.itemDiscounted = false;
