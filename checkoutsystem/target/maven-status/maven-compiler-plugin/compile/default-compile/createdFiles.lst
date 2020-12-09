@@ -1,6 +1,7 @@
 com\elliehannant\checkoutsystem\userinput\UserInputService.class
 com\elliehannant\checkoutsystem\CheckoutSystemService.class
 com\elliehannant\checkoutsystem\userinput\EditingChoice.class
+com\elliehannant\checkoutsystem\itemdetails\SampleItem.class
 com\elliehannant\checkoutsystem\userinput\UserInputHandler.class
 com\elliehannant\checkoutsystem\CheckoutTransactionService.class
 com\elliehannant\checkoutsystem\itemdetails\ItemDetails.class
