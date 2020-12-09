@@ -1,3 +1,5 @@
-com\elliehannant\checkoutsystem\CheckoutSystemApplicationTests.class
+com\elliehannant\checkoutsystem\itemdetails\ItemDetailsServiceTest.class
+com\elliehannant\checkoutsystem\userinput\UserInputServiceTest.class
 com\elliehannant\checkoutsystem\CheckoutSystemServiceTest.class
+com\elliehannant\checkoutsystem\itemdetails\UpdatingItemDetailsServiceTest.class
 com\elliehannant\checkoutsystem\CheckoutTransactionServiceTest.class
