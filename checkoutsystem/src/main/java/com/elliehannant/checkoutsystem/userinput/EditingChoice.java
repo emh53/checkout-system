@@ -2,7 +2,7 @@ package com.elliehannant.checkoutsystem.userinput;
 
 public enum EditingChoice {
     PRICE_PER_UNIT(1, "1. Price Per Unit"),
-    ADD_OR_EDIT_DISCOUNT(2, "2. Add of Edit Discount"),
+    ADD_OR_EDIT_DISCOUNT(2, "2. Add or Edit Discount"),
     REMOVE_DISCOUNT(3, "3. Remove Discount");
 
     private final int value;

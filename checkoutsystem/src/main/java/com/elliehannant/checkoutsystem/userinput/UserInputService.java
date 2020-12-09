@@ -83,7 +83,7 @@ public class UserInputService {
         while (true) {
             String response = userInput.nextLine();
             for (String validResponse : validResponseList) {
-                if (validResponse.equals(response)) {
+                if (validResponse.equalsIgnoreCase(response)) {
                     return validResponse;
                 }
             }

@@ -45,7 +45,7 @@ public class ItemDetailsService {
 
     public ItemDetails getItemDetails(String item, List<ItemDetails> itemDetailsList) {
         for (ItemDetails itemDetails : itemDetailsList) {
-            if (itemDetails.getItem().equals(item)) {
+            if (itemDetails.getItem().equalsIgnoreCase(item)) {
                 return itemDetails;
             }
         }
