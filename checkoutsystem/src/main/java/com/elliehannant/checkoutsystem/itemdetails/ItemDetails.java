@@ -8,27 +8,6 @@ public class ItemDetails {
     private Integer discountPrice;
     private Integer discountedItemPrice;
 
-    public ItemDetails(String item, int pricePerUnit) {
-        this.item = item;
-        this.pricePerUnit = pricePerUnit;
-        this.itemDiscounted = false;
-    }
-
-    public ItemDetails(String item, int pricePerUnit, Integer discountNum, Integer discountPrice) {
-        this.item = item;
-        this.pricePerUnit = pricePerUnit;
-        this.discountNum = discountNum;
-        this.discountPrice = discountPrice;
-
-        if (discountNum != null && discountPrice != null) {
-            int numberOfFullPriceItems = discountNum - 1;
-            this.discountedItemPrice = discountPrice - (numberOfFullPriceItems * pricePerUnit);
-            this.itemDiscounted = true;
-        } else {
-            this.itemDiscounted = false;
-        }
-    }
-
     public String getItem() {
         return item;
     }
@@ -71,10 +50,6 @@ public class ItemDetails {
 
     public Integer getDiscountedItemPrice() {
         return discountedItemPrice;
-    }
-
-    public void setDiscountedItemPrice(Integer discountedItemPrice) {
-        this.discountedItemPrice = discountedItemPrice;
     }
 
     public void setDiscountedItemPrice(int pricePerUnit, Integer discountNum, Integer discountPrice) {

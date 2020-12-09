@@ -2,15 +2,23 @@ package com.elliehannant.checkoutsystem.userinput;
 
 import com.elliehannant.checkoutsystem.itemdetails.ItemDetails;
 import com.elliehannant.checkoutsystem.itemdetails.ItemDetailsService;
+import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Scanner;
 
+@Service
 public class UserInputService {
 
     private static final String QUESTION_WITH_OPTIONS = "\n%s? %s%n";
 
-    public static ItemDetails getItemForCheckoutTransaction(List<ItemDetails> itemDetailsList) {
+    private final ItemDetailsService itemDetailsService;
+
+    public UserInputService(ItemDetailsService itemDetailsService) {
+        this.itemDetailsService = itemDetailsService;
+    }
+
+    public ItemDetails getItemForCheckoutTransaction(List<ItemDetails> itemDetailsList) {
         Scanner userInput = new Scanner(System.in);
         while (true) {
             System.out.print("\nItem (enter if done): ");
@@ -24,16 +32,16 @@ public class UserInputService {
                 }
             }
 
-            ItemDetails itemDetails = ItemDetailsService.getItemDetails(response, itemDetailsList);
+            ItemDetails itemDetails = itemDetailsService.getItemDetails(response, itemDetailsList);
             if (itemDetails == null) {
-                System.out.printf(UserInputHandler.INVALID_ITEM_SUPPLIED, ItemDetailsService.getItemNameList(itemDetailsList).toString());
+                System.out.printf(UserInputHandler.INVALID_ITEM_SUPPLIED, itemDetailsService.getItemNameList(itemDetailsList).toString());
             } else {
                 return itemDetails;
             }
         }
     }
 
-    public static boolean getYesOrNoResponseAsBoolean(String question, Scanner userInput) {
+    public boolean getYesOrNoResponseAsBoolean(String question, Scanner userInput) {
         System.out.printf("\n%s? [y/n]%n", question);
 
         while (true) {
@@ -48,12 +56,12 @@ public class UserInputService {
         }
     }
 
-    public static boolean getYesOrNoResponseAsBoolean(String question) {
+    public boolean getYesOrNoResponseAsBoolean(String question) {
         Scanner userInput = new Scanner(System.in);
         return getYesOrNoResponseAsBoolean(question, userInput);
     }
 
-    public static int getIntegerResponseTwoOrAbove(String question) {
+    public int getIntegerResponseTwoOrAbove(String question) {
         Scanner userInput = new Scanner(System.in);
         System.out.printf("\n%s?%n", question);
         while (true) {
@@ -68,7 +76,7 @@ public class UserInputService {
         }
     }
 
-    public static String getStringResponse(String question, List<String> validResponseList) {
+    public String getStringResponse(String question, List<String> validResponseList) {
         Scanner userInput = new Scanner(System.in);
         System.out.printf(QUESTION_WITH_OPTIONS, question, validResponseList.toString());
 
@@ -83,7 +91,7 @@ public class UserInputService {
         }
     }
 
-    public static EditingChoice getEditingChoiceResponse(String question) {
+    public EditingChoice getEditingChoiceResponse(String question) {
         Scanner userInput = new Scanner(System.in);
         System.out.printf(QUESTION_WITH_OPTIONS, question, EditingChoice.displayAllOptionsInList());
 
@@ -101,7 +109,7 @@ public class UserInputService {
 
     }
 
-    public static int getIntegerPriceResponse(String question) {
+    public int getIntegerPriceResponse(String question) {
         Scanner userInput = new Scanner(System.in);
         System.out.printf("\n%s? (in pence)%n", question);
 
@@ -123,7 +131,8 @@ public class UserInputService {
         }
     }
 
-    private static int getIntegerResponse(Scanner userInput) {
+    // catch when user enters instead of integer
+    int getIntegerResponse(Scanner userInput) {
         while (true) {
             String input = userInput.nextLine();
             if (input != null && !input.equals("")) {

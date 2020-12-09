@@ -1,51 +1,67 @@
 package com.elliehannant.checkoutsystem;
 
 import com.elliehannant.checkoutsystem.itemdetails.ItemDetails;
+import com.elliehannant.checkoutsystem.itemdetails.ItemDetailsService;
+import com.elliehannant.checkoutsystem.itemdetails.SampleItem;
+import com.elliehannant.checkoutsystem.userinput.UserInputService;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.PrintStream;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import static com.elliehannant.checkoutsystem.CheckoutTransactionService.*;
+import static org.mockito.BDDMockito.given;
+
 @RunWith(MockitoJUnitRunner.class)
 public class CheckoutTransactionServiceTest {
-
-    public static final int PRICE_PER_UNIT = 50;
-    public static final int DISCOUNT_PRICE = 30;
 
     private final InputStream systemIn = System.in;
     private final PrintStream systemOut = System.out;
 
     private ByteArrayOutputStream testOut;
 
-    ItemDetails itemA;
-    List<ItemDetails> availableCheckoutItems;
-    List<String> oneItemInCheckout;
-    List<String> twoItemsInCheckout;
-    List<String> threeItemsInCheckout;
-    List<String> sixItemsInCheckout;
+    @InjectMocks
+    private CheckoutTransactionService checkoutTransactionService;
+
+    @Mock
+    private UserInputService userInputService;
+
+    @Mock
+    private ItemDetailsService itemDetailsService;
+
+    List<ItemDetails> itemsAvailableForCheckout;
+    ItemDetails itemWithDiscount;
+    ItemDetails itemWithoutDiscount;
 
     @Before
     public void setUp() {
         testOut = new ByteArrayOutputStream();
         System.setOut(new PrintStream(testOut));
 
-        itemA = new ItemDetails("A", PRICE_PER_UNIT, 3, 130);
+        itemWithDiscount = SampleItem.getSampleItemDetails(SampleItem.A);
+        itemWithoutDiscount = SampleItem.getSampleItemDetails(SampleItem.C);
 
-        availableCheckoutItems = Collections.singletonList(itemA);
-        oneItemInCheckout = Collections.singletonList("A");
+        itemsAvailableForCheckout = new ArrayList<>();
+        itemsAvailableForCheckout.add(itemWithDiscount);
+        itemsAvailableForCheckout.add(itemWithoutDiscount);
 
-        twoItemsInCheckout = Arrays.asList("A", "A");
-        threeItemsInCheckout = Arrays.asList("A", "A", "A");
-        sixItemsInCheckout = Arrays.asList("A", "A", "A", "A", "A", "A");
+        given(itemDetailsService.formatPrice(0)).willReturn("0p");
+        given(itemDetailsService.formatPrice(50)).willReturn("50p");
+        given(itemDetailsService.formatPrice(30)).willReturn("30p");
+        given(itemDetailsService.formatPrice(100)).willReturn("£1.00");
+        given(itemDetailsService.formatPrice(130)).willReturn("£1.30");
     }
 
     @After
@@ -55,48 +71,90 @@ public class CheckoutTransactionServiceTest {
     }
 
     @Test
-    public void checkoutItem_itemCheckedOutAndNoDiscountAdded() {
-        int expectedUpdatedTotal = 2 * PRICE_PER_UNIT;
-        String expectedOutput = "+ 50p (Total: £1.00)\r\n";
+    public void runCheckoutTransaction_noItemsCheckedOut() {
+        given(userInputService.getItemForCheckoutTransaction(itemsAvailableForCheckout)).willReturn(null);
 
-        int updatedTotal = CheckoutTransactionService.checkoutItem(PRICE_PER_UNIT, twoItemsInCheckout, itemA);
-        Assert.assertEquals("Total price updated", expectedUpdatedTotal, updatedTotal);
-        Assert.assertEquals("Total output", expectedOutput, getOutput());
+        String expectedResponse = String.format(FINAL_TOTAL_DISPLAY, "0p", "[]");
+        String response = checkoutTransactionService.runCheckoutTransaction(itemsAvailableForCheckout);
+        Assert.assertEquals("Final total response", expectedResponse, response);
     }
 
     @Test
-    public void checkoutItem_itemCheckedOutAndDiscountAdded() {
-        int totalBeforeItemAdded = 2 * PRICE_PER_UNIT;
-        int expectedUpdatedTotal = totalBeforeItemAdded + DISCOUNT_PRICE;
-        String expectedOutput = "(discount added) + 30p (Total: £1.30)\r\n";
+    public void runCheckoutTransaction_oneItemCheckedOut() {
+        given(userInputService.getItemForCheckoutTransaction(itemsAvailableForCheckout)).willReturn(itemWithDiscount, (ItemDetails) null);
 
-        int updatedTotal = CheckoutTransactionService.checkoutItem(totalBeforeItemAdded, threeItemsInCheckout, itemA);
-        Assert.assertEquals("Total price updated", expectedUpdatedTotal, updatedTotal);
-        Assert.assertEquals("Total output", expectedOutput, getOutput());
+        String expectedResponse = String.format(FINAL_TOTAL_DISPLAY, "50p", "[A]");
+        String response = checkoutTransactionService.runCheckoutTransaction(itemsAvailableForCheckout);
+        Assert.assertEquals("Final total response", expectedResponse, response);
     }
 
     @Test
-    public void getPriceWithDiscountCheck_pricePerUnitReturnedForOneItem() {
-        int response = CheckoutTransactionService.getPriceWithDiscountCheck(itemA, oneItemInCheckout);
-        Assert.assertEquals("Price per unit", PRICE_PER_UNIT, response);
+    public void runCheckoutTransaction_moreThanOneItemCheckedOut() {
+        given(userInputService.getItemForCheckoutTransaction(itemsAvailableForCheckout)).willReturn(itemWithDiscount, itemWithDiscount, null);
+
+        String expectedResponse = String.format(FINAL_TOTAL_DISPLAY, "£1.00", "[A, A]");
+        String response = checkoutTransactionService.runCheckoutTransaction(itemsAvailableForCheckout);
+        Assert.assertEquals("Final total response", expectedResponse, response);
     }
 
     @Test
-    public void getPriceWithDiscountCheck_pricePerUnitReturnedForTwoItems() {
-        int response = CheckoutTransactionService.getPriceWithDiscountCheck(itemA, twoItemsInCheckout);
-        Assert.assertEquals("Price per unit", PRICE_PER_UNIT, response);
+    public void updateTotalPrice_totalUpdatedWithoutDiscountAndStartingTotalZero() {
+        List<String> itemsInCheckout = Collections.singletonList("A");
+
+        int expectedResponse = 50;
+        int response = checkoutTransactionService.updateTotalPrice(0, itemsInCheckout, itemWithDiscount);
+        Assert.assertEquals("Updated total price", expectedResponse, response);
+
+        String expectedOutput = String.format(RUNNING_TOTAL_DISPLAY, "50p", "50p");
+        Assert.assertEquals("System output", expectedOutput, getOutput());
     }
 
     @Test
-    public void getPriceWithDiscountCheck_pricePerUnitReturnedForDiscountedItem() {
-        int response = CheckoutTransactionService.getPriceWithDiscountCheck(itemA, threeItemsInCheckout);
-        Assert.assertEquals("Price per unit", DISCOUNT_PRICE, response);
+    public void updateTotalPrice_totalUpdatedWithoutDiscountAndStartingTotalNotZero() {
+        List<String> itemsInCheckout = Arrays.asList("A", "A");
+
+        int expectedResponse = 100;
+        int response = checkoutTransactionService.updateTotalPrice(50, itemsInCheckout, itemWithDiscount);
+        Assert.assertEquals("Updated total price", expectedResponse, response);
+
+        String expectedOutput = String.format(RUNNING_TOTAL_DISPLAY, "50p", "£1.00");
+        Assert.assertEquals("System output", expectedOutput, getOutput());
     }
 
     @Test
-    public void getPriceWithDiscountCheck_pricePerUnitReturnedForSecondDiscountedItem() {
-        int response = CheckoutTransactionService.getPriceWithDiscountCheck(itemA, sixItemsInCheckout);
-        Assert.assertEquals("Price per unit", DISCOUNT_PRICE, response);
+    public void updateTotalPrice_totalUpdatedWithDiscount() {
+        List<String> itemsInCheckout = Arrays.asList("A", "A", "A");
+
+        int expectedResponse = 130;
+        int response = checkoutTransactionService.updateTotalPrice(100, itemsInCheckout, itemWithDiscount);
+        Assert.assertEquals("Updated total price", expectedResponse, response);
+
+        String expectedOutput = String.format(RUNNING_TOTAL_DISCOUNT_DISPLAY, "30p", "£1.30");
+        Assert.assertEquals("System output", expectedOutput, getOutput());
+    }
+
+    @Test
+    public void getPriceWithDiscountCheck_noDiscountAvailable() {
+        List<String> itemsInCheckout = Arrays.asList("C", "C");
+
+        int response = checkoutTransactionService.getPriceWithDiscountCheck(itemWithoutDiscount, itemsInCheckout);
+        Assert.assertEquals("Checkout price", SampleItem.C.getUnitPrice(), response);
+    }
+
+    @Test
+    public void getPriceWithDiscountCheck_discountAvailableAndNotDiscountedItem() {
+        List<String> itemsInCheckout = Arrays.asList("A", "A");
+
+        int response = checkoutTransactionService.getPriceWithDiscountCheck(itemWithDiscount, itemsInCheckout);
+        Assert.assertEquals("Checkout price", SampleItem.A.getUnitPrice(), response);
+    }
+
+    @Test
+    public void getPriceWithDiscountCheck_discountAvailableAndDiscountedItem() {
+        List<String> itemsInCheckout = Arrays.asList("A", "A", "A");
+
+        int response = checkoutTransactionService.getPriceWithDiscountCheck(itemWithDiscount, itemsInCheckout);
+        Assert.assertEquals("Checkout price", 30, response);
     }
 
     private String getOutput() {
