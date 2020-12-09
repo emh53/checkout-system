@@ -1,79 +1,58 @@
 package com.elliehannant.checkoutsystem;
 
 import com.elliehannant.checkoutsystem.itemdetails.ItemDetails;
-import org.junit.After;
-import org.junit.Assert;
+import com.elliehannant.checkoutsystem.itemdetails.ItemDetailsService;
+import com.elliehannant.checkoutsystem.itemdetails.SampleItem;
+import com.elliehannant.checkoutsystem.userinput.UserInputService;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.InputStream;
-import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
+
+import static com.elliehannant.checkoutsystem.CheckoutSystemService.DISPLAY_ITEMS;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 @RunWith(MockitoJUnitRunner.class)
 public class CheckoutSystemServiceTest {
 
-    private final InputStream systemIn = System.in;
-    private final PrintStream systemOut = System.out;
+    @InjectMocks
+    private CheckoutSystemService checkoutSystemService;
 
-    private ByteArrayOutputStream testOut;
+    @Mock
+    private UserInputService userInputService;
+
+    @Mock
+    private ItemDetailsService itemDetailsService;
 
     private List<ItemDetails> itemDetailsList;
-    private ItemDetails itemDetails;
 
     @Before
     public void setUp() {
-        testOut = new ByteArrayOutputStream();
-        System.setOut(new PrintStream(testOut));
-
         itemDetailsList = new ArrayList<>();
-        itemDetails = new ItemDetails("A", 10, 3, 20);
+        ItemDetails itemDetails = SampleItem.getSampleItemDetails(SampleItem.A);
         itemDetailsList.add(itemDetails);
-    }
-
-    @After
-    public void restoreSystemInputOutput() {
-        System.setIn(systemIn);
-        System.setOut(systemOut);
     }
 
     @Test
     public void displayItemDetails_userRespondedYesAndDetailsDisplayed() {
-        provideInput("y");
-        CheckoutSystemService.displayItemDetails(itemDetailsList);
+        given(userInputService.getYesOrNoResponseAsBoolean(DISPLAY_ITEMS)).willReturn(true);
 
-        String expectedOutput = "Would you like to display the items? [y/n]";
-        expectedOutput += "\r\n";
-        expectedOutput += "\r\n----------------------------------------------------------";
-        expectedOutput += "\r\n ITEM DETAILS:";
-        expectedOutput += "\r\n----------------------------------------------------------";
-        expectedOutput += String.format("\r\nItem details for %s", itemDetails.getItem());
-        expectedOutput += String.format("\r\n Price per unit: %sp", itemDetails.getPricePerUnit());
-        expectedOutput += String.format("\r\n Discount: %s for %sp", itemDetails.getDiscountNum(), itemDetails.getDiscountPrice());
-
-        Assert.assertEquals(expectedOutput, getOutput().trim());
+        checkoutSystemService.displayItemDetails(itemDetailsList);
+        verify(itemDetailsService, times(1)).displayItemDetailsList(itemDetailsList);
     }
 
     @Test
     public void displayItemDetails_userRespondedNoAndNothingDisplayed() {
-        provideInput("n");
-        CheckoutSystemService.displayItemDetails(itemDetailsList);
+        given(userInputService.getYesOrNoResponseAsBoolean(DISPLAY_ITEMS)).willReturn(false);
 
-        String expectedOutput = "Would you like to display the items? [y/n]";
-        Assert.assertEquals(expectedOutput, getOutput().trim());
-    }
-
-    private void provideInput(String data) {
-        ByteArrayInputStream testIn = new ByteArrayInputStream(data.getBytes());
-        System.setIn(testIn);
-    }
-
-    private String getOutput() {
-        return testOut.toString();
+        checkoutSystemService.displayItemDetails(itemDetailsList);
+        verify(itemDetailsService, times(0)).displayItemDetailsList(itemDetailsList);
     }
 }

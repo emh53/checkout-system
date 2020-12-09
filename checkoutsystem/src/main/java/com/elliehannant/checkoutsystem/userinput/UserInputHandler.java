@@ -14,11 +14,16 @@ public class UserInputHandler {
     public static final String INVALID_NON_NUMERICAL_VALUE = " Please enter a numerical value";
 
     public static boolean isUserInputInteger(Scanner userInput) {
-        if (!userInput.hasNextInt()) {
-            userInput.nextLine();
-            System.out.println(INVALID_NON_NUMERICAL_VALUE);
-            return false;
+        while (true) {
+            if (!userInput.hasNextInt()) {
+                String input = userInput.nextLine();
+                if (input == null || input.equals("")) {    // handles 'enter'
+                    continue;
+                }
+                System.out.println(INVALID_NON_NUMERICAL_VALUE);
+                return false;
+            }
+            return true;
         }
-        return true;
     }
 }

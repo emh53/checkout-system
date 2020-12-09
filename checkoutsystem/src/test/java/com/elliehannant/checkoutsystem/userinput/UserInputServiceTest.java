@@ -1,11 +1,15 @@
 package com.elliehannant.checkoutsystem.userinput;
 
 import com.elliehannant.checkoutsystem.itemdetails.ItemDetails;
+import com.elliehannant.checkoutsystem.itemdetails.ItemDetailsService;
+import com.elliehannant.checkoutsystem.itemdetails.SampleItem;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
 import java.io.ByteArrayInputStream;
@@ -15,6 +19,9 @@ import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Scanner;
+
+import static org.mockito.BDDMockito.given;
 
 @RunWith(MockitoJUnitRunner.class)
 public class UserInputServiceTest {
@@ -29,12 +36,33 @@ public class UserInputServiceTest {
     private final InputStream systemIn = System.in;
     private final PrintStream systemOut = System.out;
 
+    @InjectMocks
+    private UserInputService userInputService;
+
+    @Mock
+    private ItemDetailsService itemDetailsService;
+
     private ByteArrayOutputStream testOut;
+
+    private List<String> itemNameList;
+    private List<ItemDetails> itemDetailsList;
+    private ItemDetails itemDetails;
 
     @Before
     public void setUp() {
         testOut = new ByteArrayOutputStream();
         System.setOut(new PrintStream(testOut));
+
+        itemNameList = new ArrayList<>();
+        itemNameList.add(SampleItem.A.getItemName());
+        itemNameList.add(SampleItem.B.getItemName());
+        itemNameList.add(SampleItem.C.getItemName());
+        itemNameList.add(SampleItem.D.getItemName());
+
+        itemDetailsList = SampleItem.getAllSampleItemDetails();
+
+        itemDetails = SampleItem.getSampleItemDetails(SampleItem.A);
+        given(itemDetailsService.getItemDetails(SampleItem.A.getItemName(), itemDetailsList)).willReturn(itemDetails);
     }
 
     @After
@@ -50,8 +78,7 @@ public class UserInputServiceTest {
     public void getItemForCheckoutTransaction_newLineInputAndConfirm() {
         provideInput("\ny");      //  new line then 'y'(yes)
 
-        List<ItemDetails> itemDetailsList = new ArrayList<>();
-        ItemDetails response = UserInputService.getItemForCheckoutTransaction(itemDetailsList);
+        ItemDetails response = userInputService.getItemForCheckoutTransaction(itemDetailsList);
         Assert.assertNull("Checkout Transaction", response);
 
         String expectedOutput = ENTER_ITEM_OUTPUT;
@@ -63,12 +90,8 @@ public class UserInputServiceTest {
     public void getItemForCheckoutTransaction_newLineInputAndCancel() {
         provideInput("\nn\nA");      //  new line then 'n'(no) the 'A'
 
-        ItemDetails itemA = new ItemDetails("A", 50, 3, 130);
-        List<ItemDetails> itemDetailsList = new ArrayList<>();
-        itemDetailsList.add(itemA);
-
-        ItemDetails response = UserInputService.getItemForCheckoutTransaction(itemDetailsList);
-        Assert.assertEquals("Checkout Transaction", itemA, response);
+        ItemDetails response = userInputService.getItemForCheckoutTransaction(itemDetailsList);
+        Assert.assertEquals("Checkout Transaction", itemDetails, response);
 
         String expectedOutput = ENTER_ITEM_OUTPUT;
         expectedOutput += String.format(YES_OR_NO_EXPECTED_OUTPUT, "Are you sure you are done");
@@ -80,13 +103,8 @@ public class UserInputServiceTest {
     public void getItemForCheckoutTransaction_validItemInput() {
         provideInput("A");        //  'A'
 
-        ItemDetails itemA = new ItemDetails("A", 50, 3, 130);
-        List<ItemDetails> itemDetailsList = new ArrayList<>();
-        itemDetailsList.add(itemA);
-
-        ItemDetails response = UserInputService.getItemForCheckoutTransaction(itemDetailsList);
-        Assert.assertEquals("Checkout Transaction", itemA, response);
-
+        ItemDetails response = userInputService.getItemForCheckoutTransaction(itemDetailsList);
+        Assert.assertEquals("Checkout Transaction", itemDetails, response);
         Assert.assertEquals("Output", ENTER_ITEM_OUTPUT, getOutput());
     }
 
@@ -94,15 +112,12 @@ public class UserInputServiceTest {
     public void getItemForCheckoutTransaction_invalidInput() {
         provideInput("1\nA");     // invalid 1 then 'A'
 
-        ItemDetails itemA = new ItemDetails("A", 50, 3, 130);
-        List<ItemDetails> itemDetailsList = new ArrayList<>();
-        itemDetailsList.add(itemA);
-
-        ItemDetails response = UserInputService.getItemForCheckoutTransaction(itemDetailsList);
-        Assert.assertEquals("Checkout Transaction", itemA, response);
+        given(itemDetailsService.getItemNameList(itemDetailsList)).willReturn(itemNameList);
+        ItemDetails response = userInputService.getItemForCheckoutTransaction(itemDetailsList);
+        Assert.assertEquals("Checkout Transaction", itemDetails, response);
 
         String expectedOutput = ENTER_ITEM_OUTPUT;
-        expectedOutput += String.format(UserInputHandler.INVALID_ITEM_SUPPLIED, "[A]");
+        expectedOutput += String.format(UserInputHandler.INVALID_ITEM_SUPPLIED, "[A, B, C, D]");
         expectedOutput += ENTER_ITEM_OUTPUT;
         Assert.assertEquals("Output", expectedOutput, getOutput());
     }
@@ -114,7 +129,7 @@ public class UserInputServiceTest {
     public void getYesOrNoResponse_yesInput() {
         provideInput("y");    //  yes entered
 
-        boolean response = UserInputService.getYesOrNoResponseAsBoolean(QUESTION);
+        boolean response = userInputService.getYesOrNoResponseAsBoolean(QUESTION);
         Assert.assertTrue("YesOrNo", response);
 
         String expectedOutput = String.format(YES_OR_NO_EXPECTED_OUTPUT, QUESTION);
@@ -125,7 +140,7 @@ public class UserInputServiceTest {
     public void getYesOrNoResponse_noInput() {
         provideInput("n");    //  no entered
 
-        boolean response = UserInputService.getYesOrNoResponseAsBoolean(QUESTION);
+        boolean response = userInputService.getYesOrNoResponseAsBoolean(QUESTION);
         Assert.assertFalse("YesOrNo", response);
 
         String expectedOutput = String.format(YES_OR_NO_EXPECTED_OUTPUT, QUESTION);
@@ -136,7 +151,7 @@ public class UserInputServiceTest {
     public void getYesOrNoResponse_invalidInput() {
         provideInput("1\ny");    //  invalid input then yes entered
 
-        boolean response = UserInputService.getYesOrNoResponseAsBoolean(QUESTION);
+        boolean response = userInputService.getYesOrNoResponseAsBoolean(QUESTION);
         Assert.assertTrue("YesOrNo", response);
 
         String expectedOutput = String.format(YES_OR_NO_EXPECTED_OUTPUT, QUESTION);
@@ -151,7 +166,7 @@ public class UserInputServiceTest {
     public void getIntegerResponseTwoOrAbove_notInteger() {
         provideInput("A\n2");   // invalid String then int
 
-        int response = UserInputService.getIntegerResponseTwoOrAbove(QUESTION);
+        int response = userInputService.getIntegerResponseTwoOrAbove(QUESTION);
         Assert.assertEquals("Integer response", 2, response);
 
         String expectedOutput = "\n" + QUESTION + "?\r\n";
@@ -163,7 +178,7 @@ public class UserInputServiceTest {
     public void getIntegerResponseTwoOrAbove_validInput() {
         provideInput("2");   // int
 
-        int response = UserInputService.getIntegerResponseTwoOrAbove(QUESTION);
+        int response = userInputService.getIntegerResponseTwoOrAbove(QUESTION);
         Assert.assertEquals("Integer response", 2, response);
 
         String expectedOutput = "\n" + QUESTION + "?\r\n";
@@ -174,7 +189,7 @@ public class UserInputServiceTest {
     public void getIntegerResponseTwoOrAbove_oneSupplied() {
         provideInput("1\n2");   // invalid value then int
 
-        int response = UserInputService.getIntegerResponseTwoOrAbove(QUESTION);
+        int response = userInputService.getIntegerResponseTwoOrAbove(QUESTION);
         Assert.assertEquals("Integer response", 2, response);
 
         String expectedOutput = "\n" + QUESTION + "?\r\n";
@@ -186,7 +201,7 @@ public class UserInputServiceTest {
     public void getIntegerResponseTwoOrAbove_zeroSupplied() {
         provideInput("0\n2");   // invalid value then int
 
-        int response = UserInputService.getIntegerResponseTwoOrAbove(QUESTION);
+        int response = userInputService.getIntegerResponseTwoOrAbove(QUESTION);
         Assert.assertEquals("Integer response", 2, response);
 
         String expectedOutput = "\n" + QUESTION + "?\r\n";
@@ -198,7 +213,7 @@ public class UserInputServiceTest {
     public void getIntegerResponseTwoOrAbove_negativeSupplied() {
         provideInput("-1\n2");   // invalid value then int
 
-        int response = UserInputService.getIntegerResponseTwoOrAbove(QUESTION);
+        int response = userInputService.getIntegerResponseTwoOrAbove(QUESTION);
         Assert.assertEquals("Integer response", 2, response);
 
         String expectedOutput = "\n" + QUESTION + "?\r\n";
@@ -214,7 +229,7 @@ public class UserInputServiceTest {
         provideInput("A");      //  valid response
 
         List<String> validResponseList = Arrays.asList("A", "B");
-        String response = UserInputService.getStringResponse(QUESTION, validResponseList);
+        String response = userInputService.getStringResponse(QUESTION, validResponseList);
         Assert.assertEquals("String response", "A", response);
 
         Assert.assertEquals("Output", STRING_RESPONSE_A_OR_B, getOutput());
@@ -225,7 +240,7 @@ public class UserInputServiceTest {
         provideInput("1\nA");       // response not in list then valid response
 
         List<String> validResponseList = Arrays.asList("A", "B");
-        String response = UserInputService.getStringResponse(QUESTION, validResponseList);
+        String response = userInputService.getStringResponse(QUESTION, validResponseList);
         Assert.assertEquals("String response", "A", response);
 
         String expectedOutput = STRING_RESPONSE_A_OR_B;
@@ -240,7 +255,7 @@ public class UserInputServiceTest {
     public void getEditingChoiceResponse_notInteger() {
         provideInput("A\n" + EditingChoice.PRICE_PER_UNIT.getValue());    // invalid option then valid
 
-        EditingChoice response = UserInputService.getEditingChoiceResponse(QUESTION);
+        EditingChoice response = userInputService.getEditingChoiceResponse(QUESTION);
         Assert.assertEquals("Editing Choice", EditingChoice.PRICE_PER_UNIT, response);
 
         String expectedOutput = EDITING_CHOICE_QUESTION;
@@ -252,7 +267,7 @@ public class UserInputServiceTest {
     public void getEditingChoiceResponse_validInput() {
         provideInput(String.valueOf(EditingChoice.PRICE_PER_UNIT.getValue()));    // valid option
 
-        EditingChoice response = UserInputService.getEditingChoiceResponse(QUESTION);
+        EditingChoice response = userInputService.getEditingChoiceResponse(QUESTION);
         Assert.assertEquals("Editing Choice", EditingChoice.PRICE_PER_UNIT, response);
 
         Assert.assertEquals("Output", EDITING_CHOICE_QUESTION, getOutput());
@@ -262,7 +277,7 @@ public class UserInputServiceTest {
     public void getEditingChoiceResponse_invalidInput() {
         provideInput("6\n" + EditingChoice.PRICE_PER_UNIT.getValue());    // invalid option then valid
 
-        EditingChoice response = UserInputService.getEditingChoiceResponse(QUESTION);
+        EditingChoice response = userInputService.getEditingChoiceResponse(QUESTION);
         Assert.assertEquals("Editing Choice", EditingChoice.PRICE_PER_UNIT, response);
 
         String expectedOutput = EDITING_CHOICE_QUESTION;
@@ -277,7 +292,7 @@ public class UserInputServiceTest {
     public void getIntegerPriceResponse_notInteger() {
         provideInput("A\n1");       // not int then valid
 
-        int response = UserInputService.getIntegerPriceResponse(QUESTION);
+        int response = userInputService.getIntegerPriceResponse(QUESTION);
         Assert.assertEquals("Price", 1, response);
 
         String expectedOutput = PRICE_QUESTION;
@@ -289,7 +304,7 @@ public class UserInputServiceTest {
     public void getIntegerPriceResponse_negativeInput() {
         provideInput("-1\n1");       // negative int then valid
 
-        int response = UserInputService.getIntegerPriceResponse(QUESTION);
+        int response = userInputService.getIntegerPriceResponse(QUESTION);
         Assert.assertEquals("Price", 1, response);
 
         String expectedOutput = PRICE_QUESTION;
@@ -301,7 +316,7 @@ public class UserInputServiceTest {
     public void getIntegerPriceResponse_zeroInputCancel() {
         provideInput("0\nn\n1");       // zero then no (to cancel) then valid
 
-        int response = UserInputService.getIntegerPriceResponse(QUESTION);
+        int response = userInputService.getIntegerPriceResponse(QUESTION);
         Assert.assertEquals("Price", 1, response);
 
         String expectedOutput = PRICE_QUESTION;
@@ -314,7 +329,7 @@ public class UserInputServiceTest {
     public void getIntegerPriceResponse_zeroInputConfirmed() {
         provideInput("0\ny");       // zero then yes (to confirm) then valid
 
-        int response = UserInputService.getIntegerPriceResponse(QUESTION);
+        int response = userInputService.getIntegerPriceResponse(QUESTION);
         Assert.assertEquals("Price", 0, response);
 
         String expectedOutput = PRICE_QUESTION;
@@ -326,10 +341,18 @@ public class UserInputServiceTest {
     public void getIntegerPriceResponse_validInput() {
         provideInput("1");       //  valid input
 
-        int response = UserInputService.getIntegerPriceResponse(QUESTION);
+        int response = userInputService.getIntegerPriceResponse(QUESTION);
         Assert.assertEquals("Price", 1, response);
 
         Assert.assertEquals("Output", PRICE_QUESTION, getOutput());
+    }
+
+    @Test
+    public void getIntegerResponse_catchEnters() {
+        provideInput("\n\n\n\n\n\n\n\n2");
+
+        int response = userInputService.getIntegerResponse(new Scanner(System.in));
+        Assert.assertEquals(2, response);
     }
 
     private void provideInput(String data) {
