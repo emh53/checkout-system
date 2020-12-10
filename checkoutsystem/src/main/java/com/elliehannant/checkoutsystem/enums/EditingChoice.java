@@ -4,9 +4,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 public enum EditingChoice {
-    ADD_ITEM(1, "1. Add a New Item", false),
-    EDIT_ITEM(2, "2. Edit an Item", false),
-    REMOVE_ITEM(3, "3. Remove an Item", false),
+    ADD_ITEM(1, "1. Add New Item", false),
+    EDIT_ITEM(2, "2. Edit Item", false),
+    REMOVE_ITEM(3, "3. Remove Item", false),
     PRICE_PER_UNIT(1, "1. Price Per Unit", true),
     ADD_OR_EDIT_DISCOUNT(2, "2. Add or Edit Discount", true),
     REMOVE_DISCOUNT(3, "3. Remove Discount", true);

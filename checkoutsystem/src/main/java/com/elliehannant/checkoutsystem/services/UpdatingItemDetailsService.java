@@ -68,6 +68,7 @@ public class UpdatingItemDetailsService {
             updateDiscount(newItemDetails);
         }
         itemDetailsList.add(newItemDetails);
+        itemDetailsService.displayItemDetails(newItemName, itemDetailsList);
     }
 
     void editItem(List<ItemDetails> itemDetailsList) {
