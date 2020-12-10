@@ -1,5 +1,6 @@
 package com.elliehannant.checkoutsystem;
 
+import com.elliehannant.checkoutsystem.services.CheckoutSystemService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
