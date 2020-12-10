@@ -4,13 +4,15 @@ import com.elliehannant.checkoutsystem.userinput.EditingChoice;
 import com.elliehannant.checkoutsystem.userinput.UserInputService;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 @Service
 public class UpdatingItemDetailsService {
 
     // Questions and outputs
-    public static final String EDIT_ITEMS = "Would you like to edit the items";
+    public static final String EDIT_ITEMS = "Would you like to add/edit/remove an items";
     public static final String EDIT_ANOTHER_ITEM = "Would you like to edit another item";
     public static final String EDIT_ITEM_FURTHER = "Would you like to edit this item further";
     public static final String EDIT_WHICH_ITEM = "Which item do you wish to edit";
@@ -33,6 +35,7 @@ public class UpdatingItemDetailsService {
         boolean editingItems = userInputService.getYesOrNoResponseAsBoolean(EDIT_ITEMS);
         do {
             if (editingItems) {     // run editor when editing items is true
+                addOrRemoveItem(itemDetailsList);
                 String itemEditing = userInputService.getStringResponse(EDIT_WHICH_ITEM, itemDetailsService.getItemNameList(itemDetailsList));
                 ItemDetails editingItemDetails = itemDetailsService.getItemDetails(itemEditing, itemDetailsList);
 
@@ -87,5 +90,56 @@ public class UpdatingItemDetailsService {
             itemDetailsEditing.setDiscountedItemPrice(itemDetailsEditing.getPricePerUnit(), itemDetailsEditing.getDiscountNum(), itemDetailsEditing.getDiscountPrice());
             System.out.printf(SUCCESSFULLY_REMOVED, itemDetailsEditing.getItem());
         }
+    }
+
+    private void addOrRemoveItem(List<ItemDetails> itemDetailsList) {
+        boolean addItem = userInputService.getYesOrNoResponseAsBoolean("Would you like to add a new item");
+        do {
+            if (addItem) {
+                List<String> currentItems = itemDetailsService.getItemNameList(itemDetailsList);
+                String newItemName = userInputService.getStringResponse("What item would you like to add", availableItemsToAdd(currentItems));
+
+                ItemDetails newItemDetails = new ItemDetails();
+                newItemDetails.setItem(newItemName);
+
+                updatePricePerUnit(newItemDetails);
+                boolean addDiscount = userInputService.getYesOrNoResponseAsBoolean("Would you like to add a discount");
+                if (addDiscount) {
+                    updateDiscount(newItemDetails);
+                }
+                itemDetailsList.add(newItemDetails);
+            }
+        } while (userInputService.getYesOrNoResponseAsBoolean("Would you like to add another item"));
+
+        boolean removeItem = userInputService.getYesOrNoResponseAsBoolean("Would you like to remove an item");
+        do {
+            if (removeItem) {
+                if (itemDetailsList.size() <= 1) {
+                    System.out.println("You can not remove an item - you must have at least one item");
+                    break;
+                }
+                List<String> currentItems = itemDetailsService.getItemNameList(itemDetailsList);
+                String deleteItemName = userInputService.getStringResponse("What item would you like to remove", currentItems);
+                boolean confirmDelete = userInputService.getYesOrNoResponseAsBoolean(String.format("Are you sure you would like to remove item %s", deleteItemName));
+                if (confirmDelete) {
+                    ItemDetails deleteItem = itemDetailsService.getItemDetails(deleteItemName, itemDetailsList);
+                    itemDetailsList.remove(deleteItem);
+                }
+            }
+        } while (userInputService.getYesOrNoResponseAsBoolean("Would you like to remove another item"));
+    }
+
+    private List<String> availableItemsToAdd(List<String> existingItems) {
+        List<String> items = new ArrayList<>();
+        for (char ch = 'A'; ch <= 'Z'; ++ch) {
+            String letter = String.valueOf(ch);
+            items.add(letter);
+            for (String existingItem : existingItems) {
+                if (letter.equalsIgnoreCase(existingItem)) { //not allowed
+                    items.remove(letter);
+                }
+            }
+        }
+        return items;
     }
 }
